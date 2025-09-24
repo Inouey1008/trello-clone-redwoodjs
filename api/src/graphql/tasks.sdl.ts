@@ -4,7 +4,7 @@ export const schema = gql`
     title: String!
     detail: String
     projectId: String!
-    Project: Project!
+    project: Project!
     statusId: String
     status: TaskStatus
     createdAt: DateTime!
@@ -12,8 +12,8 @@ export const schema = gql`
   }
 
   type Query {
-    tasks: [Task!]! @requireAuth
-    task(id: String!): Task @requireAuth
+    tasks: [Task!]!
+    task(id: String!): Task
   }
 
   input CreateTaskInput {
@@ -31,8 +31,8 @@ export const schema = gql`
   }
 
   type Mutation {
-    createTask(input: CreateTaskInput!): Task! @requireAuth
-    updateTask(id: String!, input: UpdateTaskInput!): Task! @requireAuth
-    deleteTask(id: String!): Task! @requireAuth
+    createTask(input: CreateTaskInput!): Task!
+    updateTask(id: String!, input: UpdateTaskInput!): Task!
+    deleteTask(id: String!): Task!
   }
 `
