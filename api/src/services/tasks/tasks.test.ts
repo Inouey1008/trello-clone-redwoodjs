@@ -27,13 +27,13 @@ describe('tasks', () => {
       input: {
         title: 'String',
         projectId: scenario.task.two.projectId,
-        updatedAt: '2025-09-24T15:47:10.535Z',
+        updatedAt: '2025-09-25T06:14:02.802Z',
       },
     })
 
     expect(result.title).toEqual('String')
     expect(result.projectId).toEqual(scenario.task.two.projectId)
-    expect(result.updatedAt).toEqual(new Date('2025-09-24T15:47:10.535Z'))
+    expect(result.updatedAt).toEqual(new Date('2025-09-25T06:14:02.802Z'))
   })
 
   scenario('updates a task', async (scenario: StandardScenario) => {

@@ -7,18 +7,18 @@ export const standard = defineScenario<Prisma.TaskCreateArgs>({
     one: {
       data: {
         title: 'String',
-        updatedAt: '2025-09-24T15:47:10.573Z',
-        Project: {
-          create: { title: 'String', updatedAt: '2025-09-24T15:47:10.577Z' },
+        updatedAt: '2025-09-25T06:14:02.840Z',
+        project: {
+          create: { title: 'String', updatedAt: '2025-09-25T06:14:02.843Z' },
         },
       },
     },
     two: {
       data: {
         title: 'String',
-        updatedAt: '2025-09-24T15:47:10.577Z',
-        Project: {
-          create: { title: 'String', updatedAt: '2025-09-24T15:47:10.581Z' },
+        updatedAt: '2025-09-25T06:14:02.843Z',
+        project: {
+          create: { title: 'String', updatedAt: '2025-09-25T06:14:02.846Z' },
         },
       },
     },
