@@ -12,8 +12,8 @@ export const schema = gql`
   }
 
   type Query {
-    tasks: [Task!]!
-    task(id: String!): Task
+    tasks: [Task!]! @skipAuth
+    task(id: String!): Task @skipAuth
   }
 
   input CreateTaskInput {
@@ -31,8 +31,8 @@ export const schema = gql`
   }
 
   type Mutation {
-    createTask(input: CreateTaskInput!): Task!
-    updateTask(id: String!, input: UpdateTaskInput!): Task!
-    deleteTask(id: String!): Task!
+    createTask(input: CreateTaskInput!): Task! @skipAuth
+    updateTask(id: String!, input: UpdateTaskInput!): Task! @skipAuth
+    deleteTask(id: String!): Task! @skipAuth
   }
 `
