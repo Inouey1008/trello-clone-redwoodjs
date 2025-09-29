@@ -18,6 +18,7 @@ import type {
   CellFailureProps,
   TypedDocumentNode,
 } from '@redwoodjs/web'
+import { useMutation } from '@redwoodjs/web'
 
 export const QUERY: TypedDocumentNode<
   FindProjectQuery,
@@ -51,6 +52,15 @@ export const QUERY: TypedDocumentNode<
   }
 `
 
+const UPDATE_TASK_MUTATION = gql`
+  mutation UpdateTaskMutation($id: String!, $input: UpdateTaskInput!) {
+    updateTask(id: $id, input: $input) {
+      id
+      statusId
+    }
+  }
+`
+
 export const Loading = () => <div>Loading...</div>
 
 export const Empty = () => <div>Empty</div>
@@ -62,7 +72,11 @@ export const Failure = ({
 )
 
 // ドラッグ可能なタスクコンポーネント
-const DraggableTask = ({ task }: { task: any }) => {
+const DraggableTask = ({
+  task,
+}: {
+  task: FindProjectQuery['project']['tasks'][0]
+}) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: task.id,
@@ -120,6 +134,12 @@ export const Success = ({
     (typeof project.tasks)[0] | null
   >(null)
 
+  // updateTask ミューテーション
+  const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
+    refetchQueries: [{ query: QUERY, variables: { id: project.id } }],
+    awaitRefetchQueries: true,
+  })
+
   // バックログタスク（statusId が null）
   const backlogTasks = project.tasks.filter((task) => task.statusId === null)
 
@@ -145,7 +165,7 @@ export const Success = ({
   }
 
   // ドラッグ終了時の処理
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveTask(null)
 
@@ -154,8 +174,22 @@ export const Success = ({
     const taskId = active.id as string
     const newStatusId = over.id === 'backlog' ? null : (over.id as string)
 
-    // TODO: タスクのステータス更新ミューテーションを実行
-    console.log(`Task ${taskId} moved to ${newStatusId || 'backlog'}`)
+    // 現在のタスクを取得
+    const currentTask = project.tasks.find((task) => task.id === taskId)
+    if (!currentTask || currentTask.statusId === newStatusId) return
+
+    try {
+      // タスクのステータス更新ミューテーションを実行
+      await updateTask({
+        variables: {
+          id: taskId,
+          input: { statusId: newStatusId },
+        },
+      })
+    } catch (error) {
+      // エラーハンドリングは onError で処理される
+      console.error('Drag and drop update failed:', error)
+    }
   }
 
   return (
