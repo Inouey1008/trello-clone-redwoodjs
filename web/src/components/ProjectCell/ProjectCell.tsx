@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import {
   DndContext,
@@ -71,7 +71,6 @@ export const Failure = ({
   <div style={{ color: 'red' }}>Error: {error?.message}</div>
 )
 
-// ドラッグ可能なタスクコンポーネント
 const DraggableTask = ({
   task,
 }: {
@@ -100,7 +99,6 @@ const DraggableTask = ({
   )
 }
 
-// ドロップ可能なコンテナコンポーネント
 const DroppableContainer = ({
   id,
   children,
@@ -134,37 +132,42 @@ export const Success = ({
     (typeof project.tasks)[0] | null
   >(null)
 
-  // updateTask ミューテーション
+  const [localTasks, setLocalTasks] = useState(project.tasks)
+
   const [updateTask] = useMutation(UPDATE_TASK_MUTATION, {
     refetchQueries: [{ query: QUERY, variables: { id: project.id } }],
     awaitRefetchQueries: true,
+    onError: (error) => {
+      console.error('Task update failed:', error)
+      setLocalTasks(project.tasks)
+      alert('タスクの更新に失敗しました')
+    },
   })
 
-  // バックログタスク（statusId が null）
-  const backlogTasks = project.tasks.filter((task) => task.statusId === null)
+  useEffect(() => {
+    setLocalTasks(project.tasks)
+  }, [project.tasks])
 
-  // ステータス別タスク
+  const backlogTasks = localTasks.filter((task) => {
+    return task.statusId === null
+  })
+
   const tasksByStatus = project.statuses.reduce(
     (acc, status) => {
-      acc[status.id] = project.tasks.filter(
-        (task) => task.statusId === status.id
-      )
+      acc[status.id] = localTasks.filter((task) => task.statusId === status.id)
       return acc
     },
-    {} as Record<string, typeof project.tasks>
+    {} as Record<string, typeof localTasks>
   )
 
-  // ドラッグ&ドロップのセンサー設定
   const sensors = useSensors(useSensor(PointerSensor))
 
-  // ドラッグ開始時の処理
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
     const task = project.tasks.find((t) => t.id === active.id)
     setActiveTask(task || null)
   }
 
-  // ドラッグ終了時の処理
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveTask(null)
@@ -174,12 +177,15 @@ export const Success = ({
     const taskId = active.id as string
     const newStatusId = over.id === 'backlog' ? null : (over.id as string)
 
-    // 現在のタスクを取得
-    const currentTask = project.tasks.find((task) => task.id === taskId)
+    const currentTask = localTasks.find((task) => task.id === taskId)
     if (!currentTask || currentTask.statusId === newStatusId) return
 
+    const updatedTasks = localTasks.map((task) => {
+      return task.id === taskId ? { ...task, statusId: newStatusId } : task
+    })
+    setLocalTasks(updatedTasks)
+
     try {
-      // タスクのステータス更新ミューテーションを実行
       await updateTask({
         variables: {
           id: taskId,
@@ -187,8 +193,7 @@ export const Success = ({
         },
       })
     } catch (error) {
-      // エラーハンドリングは onError で処理される
-      console.error('Drag and drop update failed:', error)
+      console.error('Update task failed:', error)
     }
   }
 
@@ -199,13 +204,10 @@ export const Success = ({
       onDragEnd={handleDragEnd}
     >
       <div>
-        {/* プロジェクト情報 */}
         <header>
           <h1>{project.title}</h1>
           {project.detail && <p>{project.detail}</p>}
         </header>
-
-        {/* バックログセクション */}
         <section>
           <h2>バックログ</h2>
           <DroppableContainer id="backlog">
@@ -220,8 +222,6 @@ export const Success = ({
             )}
           </DroppableContainer>
         </section>
-
-        {/* カンバンボードセクション */}
         <section>
           <h2>カンバンボード</h2>
           <div style={{ display: 'flex', gap: '20px' }}>
@@ -242,8 +242,6 @@ export const Success = ({
           </div>
         </section>
       </div>
-
-      {/* ドラッグ中のオーバーレイ */}
       <DragOverlay>
         {activeTask ? (
           <div
