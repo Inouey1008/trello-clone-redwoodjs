@@ -5,7 +5,8 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -81,20 +82,34 @@ const DraggableTask = ({
       id: task.id,
     })
 
-  const style = {
-    transform: `translate3d(${transform?.x ?? 0}px, ${transform?.y ?? 0}px, 0)`,
-    opacity: isDragging ? 0.5 : 1,
-    border: '1px solid #eee',
-    padding: '8px',
-    margin: '8px 0',
-    backgroundColor: 'white',
-    cursor: 'grab',
-  }
+  const transformStyle = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined
 
   return (
-    <li ref={setNodeRef} style={style} {...listeners} {...attributes}>
-      <h4>{task.title}</h4>
-      {task.detail && <p>{task.detail}</p>}
+    <li
+      ref={setNodeRef}
+      style={transformStyle}
+      className={`
+        bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-3
+        cursor-grab active:cursor-grabbing
+        ${
+          isDragging
+            ? 'opacity-60'
+            : 'hover:shadow-md transition-shadow duration-150'
+        }
+      `}
+      {...listeners}
+      {...attributes}
+    >
+      <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1">
+        {task.title}
+      </h4>
+      {task.detail && (
+        <p className="text-xs text-gray-600 leading-relaxed">{task.detail}</p>
+      )}
     </li>
   )
 }
@@ -110,16 +125,24 @@ const DroppableContainer = ({
     id,
   })
 
-  const style = {
-    backgroundColor: isOver ? '#f0f0f0' : 'transparent',
-    minHeight: '100px',
-    padding: '10px',
-    border: '1px solid #ccc',
-    flex: 1,
-  }
-
   return (
-    <article ref={setNodeRef} style={style}>
+    <article
+      ref={setNodeRef}
+      className={`
+        flex-1 min-h-32 p-4 rounded-xl
+        transition-all duration-200 ease-in-out
+        ${
+          id === 'backlog'
+            ? 'bg-slate-50 border-2 border-dashed border-slate-300'
+            : 'bg-gray-50 border border-gray-200'
+        }
+        ${
+          isOver
+            ? 'bg-blue-50 border-blue-300 shadow-md ring-2 ring-blue-200'
+            : ''
+        }
+      `}
+    >
       {children}
     </article>
   )
@@ -160,7 +183,19 @@ export const Success = ({
     {} as Record<string, typeof localTasks>
   )
 
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 1,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 0,
+        tolerance: 1,
+      },
+    })
+  )
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event
@@ -203,39 +238,57 @@ export const Success = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div>
-        <header>
-          <h1>{project.title}</h1>
-          {project.detail && <p>{project.detail}</p>}
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        <header className="text-center space-y-2">
+          <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
+            {project.title}
+          </h1>
+          {project.detail && (
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              {project.detail}
+            </p>
+          )}
         </header>
-        <section>
-          <h2>バックログ</h2>
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
+            <span className="bg-slate-100 p-2 rounded-lg mr-3">📋</span>
+            Backlog
+          </h2>
           <DroppableContainer id="backlog">
             {backlogTasks.length > 0 ? (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
+              <ul className="space-y-2">
                 {backlogTasks.map((task) => (
                   <DraggableTask key={task.id} task={task} />
                 ))}
               </ul>
             ) : (
-              <p>バックログにタスクはありません</p>
+              <p className="text-gray-500 text-center py-8 italic">
+                バックログにタスクはありません
+              </p>
             )}
           </DroppableContainer>
         </section>
-        <section>
-          <h2>カンバンボード</h2>
-          <div style={{ display: 'flex', gap: '20px' }}>
+        <section className="space-y-6">
+          <h2 className="text-2xl font-semibold text-gray-800 flex items-center">
+            <span className="bg-blue-100 p-2 rounded-lg mr-3">🚀</span>
+            Kanban board
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {project.statuses.map((status) => (
               <DroppableContainer key={status.id} id={status.id}>
-                <h3>{status.title}</h3>
+                <h3 className="font-semibold text-gray-700 mb-4 text-center bg-white py-2 px-4 rounded-lg shadow-sm border border-gray-100">
+                  {status.title}
+                </h3>
                 {tasksByStatus[status.id]?.length > 0 ? (
-                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                  <ul className="space-y-2">
                     {tasksByStatus[status.id].map((task) => (
                       <DraggableTask key={task.id} task={task} />
                     ))}
                   </ul>
                 ) : (
-                  <p>タスクなし</p>
+                  <p className="text-gray-400 text-center py-8 text-sm italic">
+                    タスクなし
+                  </p>
                 )}
               </DroppableContainer>
             ))}
@@ -244,16 +297,15 @@ export const Success = ({
       </div>
       <DragOverlay>
         {activeTask ? (
-          <div
-            style={{
-              border: '1px solid #eee',
-              padding: '8px',
-              backgroundColor: 'white',
-              opacity: 0.8,
-            }}
-          >
-            <h4>{activeTask.title}</h4>
-            {activeTask.detail && <p>{activeTask.detail}</p>}
+          <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-3">
+            <h4 className="font-medium text-gray-900 text-sm leading-tight mb-1">
+              {activeTask.title}
+            </h4>
+            {activeTask.detail && (
+              <p className="text-xs text-gray-600 leading-relaxed">
+                {activeTask.detail}
+              </p>
+            )}
           </div>
         ) : null}
       </DragOverlay>
