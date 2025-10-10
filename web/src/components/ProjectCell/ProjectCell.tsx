@@ -62,6 +62,26 @@ const UPDATE_TASK_MUTATION = gql`
   }
 `
 
+const CREATE_TASK_MUTATION = gql`
+  mutation CreateTaskMutation($input: CreateTaskInput!) {
+    createTask(input: $input) {
+      id
+      title
+      detail
+      projectId
+      statusId
+    }
+  }
+`
+
+const DELETE_TASK_MUTATION = gql`
+  mutation DeleteTaskMutation($id: String!) {
+    deleteTask(id: $id) {
+      id
+    }
+  }
+`
+
 export const Loading = () => <div>Loading...</div>
 
 export const Empty = () => <div>Empty</div>
