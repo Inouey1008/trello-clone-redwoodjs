@@ -168,6 +168,106 @@ const DroppableContainer = ({
   )
 }
 
+const AddTaskForm = ({
+  projectId,
+  statusId,
+  onSuccess,
+}: {
+  projectId: string
+  statusId: string | null
+  onSuccess: () => void
+}) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const [title, setTitle] = useState('')
+  const [detail, setDetail] = useState('')
+
+  const [createTask, { loading }] = useMutation(CREATE_TASK_MUTATION, {
+    refetchQueries: [{ query: QUERY, variables: { id: projectId } }],
+    awaitRefetchQueries: true,
+    onCompleted: () => {
+      setTitle('')
+      setDetail('')
+      setIsOpen(false)
+      onSuccess()
+    },
+    onError: (error) => {
+      console.error('Task creation failed:', error)
+      alert('タスクの作成に失敗しました')
+    },
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+
+    await createTask({
+      variables: {
+        input: {
+          title: title.trim(),
+          detail: detail.trim() || undefined,
+          projectId,
+          statusId,
+        },
+      },
+    })
+  }
+
+  if (!isOpen) {
+    return (
+      <button
+        onClick={() => setIsOpen(true)}
+        className="w-full mt-3 p-3 text-left text-sm text-gray-600 hover:bg-white hover:text-gray-900 rounded-xl transition-all duration-150 flex items-center gap-2 border border-dashed border-gray-300 hover:border-blue-400 hover:shadow-sm"
+      >
+        <span className="text-xl font-light">+</span>
+        <span>カードを追加</span>
+      </button>
+    )
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mt-3 bg-white rounded-xl border-2 border-blue-500 shadow-lg p-4 space-y-3"
+    >
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="どんな作業が必要ですか？"
+        autoFocus
+        className="w-full p-3 text-base border-0 focus:outline-none placeholder:text-gray-400"
+      />
+      <textarea
+        value={detail}
+        onChange={(e) => setDetail(e.target.value)}
+        placeholder="詳細を追加（任意）..."
+        rows={2}
+        className="w-full p-3 text-sm border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-gray-50"
+      />
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={() => {
+            setIsOpen(false)
+            setTitle('')
+            setDetail('')
+          }}
+          className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          キャンセル
+        </button>
+        <button
+          type="submit"
+          disabled={loading || !title.trim()}
+          className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-sm"
+        >
+          {loading ? '追加中...' : '追加'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export const Success = ({
   project,
 }: CellSuccessProps<FindProjectQuery, FindProjectQueryVariables>) => {
@@ -286,6 +386,11 @@ export const Success = ({
                 バックログにタスクはありません
               </p>
             )}
+            <AddTaskForm
+              projectId={project.id}
+              statusId={null}
+              onSuccess={() => {}}
+            />
           </DroppableContainer>
         </section>
         <section className="space-y-6">
@@ -310,6 +415,11 @@ export const Success = ({
                     タスクなし
                   </p>
                 )}
+                <AddTaskForm
+                  projectId={project.id}
+                  statusId={status.id}
+                  onSuccess={() => {}}
+                />
               </DroppableContainer>
             ))}
           </div>
